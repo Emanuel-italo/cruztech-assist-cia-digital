@@ -140,10 +140,28 @@ const ReportForm = () => {
   // Photos
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-    const remaining = 4 - photos.length;
-    const newPhotos = Array.from(files).slice(0, remaining).map(f => ({ url: URL.createObjectURL(f), file: f }));
-    setPhotos(prev => [...prev, ...newPhotos]);
+    if (!files || files.length === 0) return;
+
+    const incomingFiles = Array.from(files);
+
+    setPhotos(prev => {
+      const remaining = 4 - prev.length;
+      if (remaining <= 0) {
+        toast({ title: "Limite atingido", description: "O limite é de 4 fotos.", variant: "destructive" });
+        return prev;
+      }
+
+      const allowedFiles = incomingFiles.slice(0, remaining);
+      const newPhotos = allowedFiles.map(f => ({
+        url: URL.createObjectURL(f),
+        file: f
+      }));
+
+      return [...prev, ...newPhotos];
+    });
+
+    // Reseta o valor do input para permitir selecionar as mesmas imagens ou reabrir sem bugs
+    e.target.value = '';
   };
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
@@ -375,22 +393,22 @@ const ReportForm = () => {
                 ))}
               </div>
               
-              {/* NOVO CÓDIGO: Dois botões separados inseridos aqui */}
+              {/* Ajuste estrutural e isolamento de escopo dos Inputs nativos para Mobile */}
               {photos.length < 4 && (
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {/* Botão 1: Câmera Direta (1 foto) */}
-                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
+                  <label htmlFor="camera-input" className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
                     <Camera className="h-5 w-5" />
                     <span className="text-xs font-medium">Tirar Foto</span>
-                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
                   </label>
+                  <input id="camera-input" type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
 
-                  {/* Botão 2: Galeria (Múltiplas fotos) */}
-                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
+                  {/* Botão 2: Galeria (Múltiplas fotos com manipulação isolada) */}
+                  <label htmlFor="gallery-input" className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
                     <ImagePlus className="h-5 w-5" />
                     <span className="text-xs font-medium">Abrir Galeria</span>
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhoto} />
                   </label>
+                  <input id="gallery-input" type="file" accept="image/*" multiple className="hidden" onChange={handlePhoto} />
                 </div>
               )}
               
