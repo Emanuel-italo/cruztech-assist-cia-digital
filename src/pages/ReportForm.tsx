@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Camera, MapPin, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Camera, MapPin, X, ImagePlus } from "lucide-react";
 import cruztechLogo from "@/assets/cruztech-logo.jpg";
 
 interface Equipment {
@@ -45,7 +45,6 @@ interface ReportData {
 }
 
 const emptyEquipment = (): Equipment => ({ name: "", brand: "", model: "", serial_number: "", info: "" });
-
 const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 const ReportForm = () => {
@@ -65,7 +64,7 @@ const ReportForm = () => {
     pmoc_filter_clean: "", pmoc_filter_fix: "", pmoc_cabinet_air: "", pmoc_cabinet_buttons: "",
     problem_description: "", service_performed: "",
   });
-
+  
   const [equipment, setEquipment] = useState<Equipment[]>([emptyEquipment()]);
   const [photos, setPhotos] = useState<{ id?: string; url: string; file?: File }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -112,7 +111,7 @@ const ReportForm = () => {
 
       const { data: equips } = await supabase.from("report_equipment").select("*").eq("report_id", id);
       if (equips && equips.length > 0) setEquipment(equips.map(e => ({ id: e.id, name: e.name, brand: e.brand || "", model: e.model || "", serial_number: e.serial_number || "", info: e.info || "" })));
-
+      
       const { data: photoData } = await supabase.from("report_photos").select("*").eq("report_id", id);
       if (photoData) {
         const photoUrls = await Promise.all(photoData.map(async (p) => {
@@ -126,7 +125,7 @@ const ReportForm = () => {
   }, [id]);
 
   const updateField = (field: keyof ReportData, value: any) => setForm(prev => ({ ...prev, [field]: value }));
-
+  
   // GPS
   const captureGPS = () => {
     navigator.geolocation.getCurrentPosition(
@@ -148,7 +147,7 @@ const ReportForm = () => {
   };
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
-
+  
   // Signature canvas
   const getCanvasPos = (e: React.TouchEvent | React.MouseEvent) => {
     const canvas = canvasRef.current!;
@@ -156,7 +155,7 @@ const ReportForm = () => {
     const touch = "touches" in e ? e.touches[0] : e;
     return { x: (touch.clientX - rect.left) * (canvas.width / rect.width), y: (touch.clientY - rect.top) * (canvas.height / rect.height) };
   };
-
+  
   const startDraw = (e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
     setDrawing(true);
@@ -209,7 +208,7 @@ const ReportForm = () => {
         status: finalize ? "concluido" : "rascunho",
         ...(signaturePath ? { signature_url: signaturePath } : {}),
       }).eq("id", id);
-
+      
       // Save equipment
       await supabase.from("report_equipment").delete().eq("report_id", id);
       const validEquip = equipment.filter(e => e.name.trim());
@@ -227,7 +226,7 @@ const ReportForm = () => {
       setSaving(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
@@ -375,13 +374,26 @@ const ReportForm = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* NOVO CÓDIGO: Dois botões separados inseridos aqui */}
               {photos.length < 4 && (
-                <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer text-muted-foreground hover:border-primary transition-colors">
-                  <Camera className="h-5 w-5" />
-                  <span className="text-sm">Tirar foto ou anexar</span>
-                  <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handlePhoto} />
-                </label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {/* Botão 1: Câmera Direta (1 foto) */}
+                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
+                    <Camera className="h-5 w-5" />
+                    <span className="text-xs font-medium">Tirar Foto</span>
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+                  </label>
+
+                  {/* Botão 2: Galeria (Múltiplas fotos) */}
+                  <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer text-muted-foreground hover:border-primary hover:bg-primary/5 transition-colors">
+                    <ImagePlus className="h-5 w-5" />
+                    <span className="text-xs font-medium">Abrir Galeria</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhoto} />
+                  </label>
+                </div>
               )}
+              
               <p className="text-xs text-muted-foreground">{photos.length}/4 fotos</p>
             </AccordionContent>
           </AccordionItem>
